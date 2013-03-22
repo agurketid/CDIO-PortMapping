@@ -69,7 +69,7 @@ public class FindContours {
 			int w=rect.width();
 			if (1000 > w || h < 1000) {
 				//cvRectangle(src, cvPoint(x, y), cvPoint(x+w, y+h), CvScalar.RED, 1, CV_AA, 0);
-				//cvRectangle(src, cvPoint(x+(w/2), y+(h/2)), cvPoint(x+(w/2)+5, y+(h/2)+5), CvScalar.BLUE, 1, CV_AA, 0);
+				cvRectangle(src, cvPoint(x+(w/2), y+(h/2)), cvPoint(x+(w/2)+5, y+(h/2)+5), CvScalar.BLUE, 1, CV_AA, 0);
 				System.out.println("x: " + x + ", y: " + y + ", h: " + h + ", w: " + w);
 				blocks.add(new Block(new Position(x,y), new Position(x+w,y), new Position(x,y+h), new Position(x+w,y+h)));
 				System.out.println(blocks.get(blocks.size()-1).getCenter());
@@ -77,17 +77,14 @@ public class FindContours {
 			
 			cvSeq=cvSeq.h_next();
 		}
-		//blocks.get(0).setColor(Color.RED);
-		//blocks.get(1).setColor(Color.GREEN);
-		
-		cvRectangle(src, cvPoint(322, 555), cvPoint(322+5, 555+5), CvScalar.BLUE, 1, CV_AA, 0);
-		cvRectangle(src, cvPoint(573, 899), cvPoint(573+5, 899+5), CvScalar.BLUE, 1, CV_AA, 0);
-		//cvRectangle(src, cvPoint(blocks.get(0).getX().getX(), blocks.get(0).getY().getY()), cvPoint(blocks.get(0).getW().getX(), blocks.get(0).getW().getY()),CvScalar.RED, 1, CV_AA, 0);
-		//cvRectangle(src, cvPoint(blocks.get(1).getX().getX(), blocks.get(1).getY().getY()), cvPoint(blocks.get(1).getW().getX(), blocks.get(1).getW().getY()),CvScalar.GREEN, 1, CV_AA, 0);
-		int x1 = 619;
-		int y1 = 602;
-		int x2 = 793;
-		int y2 = 96;
+		blocks.get(0).setColor(Color.RED);
+		blocks.get(1).setColor(Color.GREEN);
+		cvRectangle(src, cvPoint(blocks.get(0).getX().getX(), blocks.get(0).getY().getY()), cvPoint(blocks.get(0).getW().getX(), blocks.get(0).getW().getY()),CvScalar.RED, 1, CV_AA, 0);
+		cvRectangle(src, cvPoint(blocks.get(1).getX().getX(), blocks.get(1).getY().getY()), cvPoint(blocks.get(1).getW().getX(), blocks.get(1).getW().getY()),CvScalar.GREEN, 1, CV_AA, 0);
+		int x1 = 144;
+		int y1 = 978;
+		int x2 = 792;
+		int y2 = 476;
 		cvRectangle(src, cvPoint(x1, y1), cvPoint(x1+5, y1+5), CvScalar.GREEN, 1, CV_AA, 0);
 		cvRectangle(src, cvPoint(x2, y2), cvPoint(x2+5, y2+5), CvScalar.GREEN, 1, CV_AA, 0);
 		CanvasFrame cnvs=new CanvasFrame("Beam");

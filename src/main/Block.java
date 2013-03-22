@@ -10,16 +10,20 @@ public class Block {
 	private Position center = new Position();
 	private Color color;
 	
-	public Block(Position x, Position y, Position z, Position w) {
+	public Block(Position x, Position y, Position z, Position w, Color color) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
 		this.w = w;
-	//	this.color = color;
+		this.color = color;
 		center.setX(x.getX()+((y.getX()-x.getX())/2));
 		center.setY(x.getY()+((z.getY()-x.getY())/2)); 
 //	System.out.println("x: " + x.toString() + ", y: " + y.toString()
 //			+ ", z: " + z.toString() + ", w: " + w.toString() + ", color: " + color);
+	}
+	
+	public Block() {
+		center = new Position(0,0);
 	}
 	
 	public Position getX() {

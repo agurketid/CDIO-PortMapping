@@ -103,7 +103,7 @@ public class ImageScanner {
 			int h=rect.height();
 			int w=rect.width();
 			if (w < 1000 || h < 1000) {
-				blocks.add(new Block(new Position(x,y), new Position(x+w,y), new Position(x,y+h), new Position(x+w,y+h)));
+				blocks.add(new Block(new Position(x,y), new Position(x+w,y), new Position(x,y+h), new Position(x+w,y+h), color));
 			}
 			cvSeq=cvSeq.h_next();
 		}
@@ -112,13 +112,33 @@ public class ImageScanner {
 	
 	public static ArrayList<Port> findPorts(ArrayList<Block> redBlocks, ArrayList<Block> greenBlocks) {
 		ArrayList<Port> ports = new ArrayList<Port>();
+		int index = 0;
+		int distanceX;
+		int distanceY;
 		for(Block red : redBlocks) {
-			for (Block green : greenBlocks) {
-				if (Math.abs(red.getCenter().getX()-green.getCenter().getX()) < 500 && 
-						Math.abs(red.getCenter().getY()-green.getCenter().getY()) < 500) {
-					ports.add(new Port(red, green));
+			for (int i = 0; i < greenBlocks.size()-1; i++) {
+				distanceX = Math.abs(red.getCenter().getX()-greenBlocks.get(i).getCenter().getX());
+				distanceY = Math.abs(red.getCenter().getY()-greenBlocks.get(i).getCenter().getY());
+				if (distanceX+distanceY < Math.abs(red.getCenter().getX()-greenBlocks.get(i+1).getCenter().getX()) +
+						Math.abs(red.getCenter().getY()-greenBlocks.get(i+1).getCenter().getY())) {
+					index = i;
+				} else {
+					index = i+1;
 				}
 			}
+			ports.add(new Port(red,greenBlocks.get(index)));
+			
+//			for (Block green : greenBlocks) {
+//				int distanceX = Math.abs(red.getCenter().getX()-green.getCenter().getX());
+//				int distanceY = Math.abs(red.getCenter().getY()-green.getCenter().getY());
+//				
+//				
+//				
+//				if (Math.abs(red.getCenter().getX()-green.getCenter().getX()) < 500 && 
+//						Math.abs(red.getCenter().getY()-green.getCenter().getY()) < 500) {
+//					ports.add(new Port(red, green));
+//				}
+//			}
 		}
 		return ports;
 	}	
