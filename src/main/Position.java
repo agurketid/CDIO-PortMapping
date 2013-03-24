@@ -1,6 +1,7 @@
 package main;
 
 public class Position {
+	
 	private int x;
 	private int y;
 	
@@ -12,6 +13,12 @@ public class Position {
 	public Position(int x, int y) {
 		this.x = x;
 		this.y = y;
+	}
+	
+	public int calculateDistance(Position p) {
+		int dx = this.x - p.getX();
+		int dy = this.y - p.getY();
+		return (int) Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
 	}
 	
 	public int getX() {
@@ -33,4 +40,5 @@ public class Position {
 	public String toString() {
 		return "(" + x + "," + y + ")";
 	}
+	
 }

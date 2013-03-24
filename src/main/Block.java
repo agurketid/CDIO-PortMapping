@@ -16,14 +16,16 @@ public class Block {
 		this.z = z;
 		this.w = w;
 		this.color = color;
-		center.setX(x.getX()+((y.getX()-x.getX())/2));
-		center.setY(x.getY()+((z.getY()-x.getY())/2)); 
-//	System.out.println("x: " + x.toString() + ", y: " + y.toString()
-//			+ ", z: " + z.toString() + ", w: " + w.toString() + ", color: " + color);
+		calculateCenter();
 	}
 	
 	public Block() {
 		center = new Position(0,0);
+	}
+	
+	private void calculateCenter() {
+		center.setX(x.getX()+((y.getX()-x.getX())/2));
+		center.setY(x.getY()+((z.getY()-x.getY())/2)); 
 	}
 	
 	public Position getX() {
