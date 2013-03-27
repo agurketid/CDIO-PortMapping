@@ -11,29 +11,17 @@ import static com.googlecode.javacv.cpp.opencv_core.cvPoint;
 import static com.googlecode.javacv.cpp.opencv_core.cvRectangle;
 import static com.googlecode.javacv.cpp.opencv_highgui.cvLoadImage;
 import static com.googlecode.javacv.cpp.opencv_highgui.cvSaveImage;
-//import static com.googlecode.javacv.cpp.opencv_imgproc.CV_CHAIN_APPROX_SIMPLE;
-//import static com.googlecode.javacv.cpp.opencv_imgproc.CV_MEDIAN;
-//import static com.googlecode.javacv.cpp.opencv_imgproc.CV_RETR_LIST;
-//import static com.googlecode.javacv.cpp.opencv_imgproc.CV_THRESH_BINARY_INV;
-//import static com.googlecode.javacv.cpp.opencv_imgproc.cvBoundingRect;
-//import static com.googlecode.javacv.cpp.opencv_imgproc.cvFindContours;
-//import static com.googlecode.javacv.cpp.opencv_imgproc.cvSmooth;
-//import static com.googlecode.javacv.cpp.opencv_imgproc.cvThreshold;
 import java.util.ArrayList;
 import java.util.LinkedList;
-
 import main.Block.Color;
 import com.googlecode.javacpp.Loader;
 import com.googlecode.javacv.CanvasFrame;
 import com.googlecode.javacv.cpp.opencv_core.CvContour;
-import com.googlecode.javacv.cpp.opencv_core.CvLineIterator;
 import com.googlecode.javacv.cpp.opencv_core.CvMemStorage;
 import com.googlecode.javacv.cpp.opencv_core.CvRect;
 import com.googlecode.javacv.cpp.opencv_core.CvScalar;
 import com.googlecode.javacv.cpp.opencv_core.CvSeq;
 import com.googlecode.javacv.cpp.opencv_core.IplImage;
-import com.googlecode.javacv.cpp.opencv_legacy.CvDrawShape;
-import com.googlecode.javacv.cpp.opencv_highgui.*;
 import static com.googlecode.javacv.cpp.opencv_core.*;
 import static com.googlecode.javacv.cpp.opencv_imgproc.*;
 
@@ -52,9 +40,8 @@ public class ImageScanner {
 		ArrayList<Port> ports = mapPorts(redBlocks, greenBlocks);
 		
 
-		
 		/*
-		 * <TEST>
+		 * BEGIN TEST
 		 */
 		System.out.println("Green blocks: " + greenBlocks.size());
 		System.out.println("Red blocks : " + redBlocks.size());
@@ -74,7 +61,7 @@ public class ImageScanner {
 		}
 		
 		
-		// Show ins and outs for ports
+		// DRAW IN AND OUT PORTS
 		for (int i = 0; i < ports.size(); i++) {
 	
 			cvRectangle(orgImg, cvPoint(ports.get(i).getIn().getX(), ports.get(i).getIn().getY()), 
@@ -99,17 +86,17 @@ public class ImageScanner {
 				cvLine(orgImg, p1, p2, CV_RGB(255,255,0), 2, CV_AA, 0);
 				System.out.println(points.get(i) + " ; " + points.get(0));
 			}
-			//System.out.println(p2.toString());
 		}
+		cvSaveImage("test2.jpg", orgImg);
 		
 
 
-		// Show picture
-		CanvasFrame cnvs=new CanvasFrame("Beam");
+		// SHOW IMAGE
+		CanvasFrame cnvs=new CanvasFrame("CUDACruiser");
 		cnvs.setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
 		cnvs.showImage(orgImg);
 		/*
-		 * </TEST>
+		 * END TEST>
 		 */
 	}
 	
@@ -119,27 +106,33 @@ public class ImageScanner {
 	public static ArrayList<Block> findBlocks(IplImage orgImage, Color color) {
 		// create threshold image
 		IplImage imgThreshold = cvCreateImage(cvGetSize(orgImage), 8, 1);
+		
 		// set color range - red/green
 		if (color == Color.RED) {
 			cvInRangeS(orgImage, minRed, maxRed, imgThreshold);
 		} else {
 			cvInRangeS(orgImage, minGreen, maxGreen, imgThreshold);
 		}
+		
 		// smooth image - median
 		cvSmooth(imgThreshold, imgThreshold, CV_MEDIAN, 13);
+		
 		// make all colors find in range black and everything else white
 		cvThreshold(imgThreshold, imgThreshold, 100, 255, CV_THRESH_BINARY_INV);
-		cvSaveImage("thresholdx.jpg", imgThreshold);
+		
 		// setup memory storage for saving "blocks"
 		CvMemStorage memory=CvMemStorage.create();
+		
 		// new growable sequence of elements
 		CvSeq cvSeq=new CvSeq();
+		
 		// find contours of blocks, and save them as a sequence in the memory storage
 		cvFindContours(imgThreshold, memory, cvSeq, Loader.sizeof(CvContour.class), 
 				CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
 		
 		// new arraylist to store "blocks" as Block objects
 		ArrayList<Block> blocks = new ArrayList<Block>();
+		
 		// map found elements to Block objects
 		while (cvSeq != null && !cvSeq.isNull()) {
 			CvRect rect = cvBoundingRect(cvSeq, 0);
@@ -167,10 +160,13 @@ public class ImageScanner {
 		
 		// find the closest green Block for all red Blocks and create a Port
 		for(int i = 0; i < redBlocks.size(); i++) {
+			
 			// distance between the red Block and the first green Block in the list - base case
 			d0 = redBlocks.get(i).getCenter().calculateDistance(greenBlocks.get(0).getCenter());
-			// index of first element
+			
+			// index of the first element
 			index = 0;
+			
 			// finds the index of the green Block closest to the red Block
 			for (int j = 1; j < greenBlocks.size(); j++) {
 				d1 = redBlocks.get(i).getCenter().calculateDistance(greenBlocks.get(j).getCenter());
@@ -189,15 +185,26 @@ public class ImageScanner {
 	 */
 	public static LinkedList<Position> mapRoute(ArrayList<Port> ports, Position start) {
 		LinkedList<Position> points = new LinkedList<Position>();
-		ArrayList<Port> portsTemp = ports;
-		points.add(start);
-		int d0, d1;
-		int index = 0;
 		
-		int size = ports.size();
+		// Create copy of port array
+		ArrayList<Port> portsTemp = ports;
+		
+		// Add start position to the "route list"
+		points.add(start);
+		
+		int d0, d1; // variables to store distance measurements 
+		int index = 0; // index on the array of the closest point
+		
+		int size = ports.size(); // for some reason, it won't run as intended, if ports.size() is set in loop
 		for (int i = 0; i < size; i++) {
+			
+			// distance between latest added position, and first in position in the portTemp array - base case
 			d0 = points.getLast().calculateDistance(portsTemp.get(0).getIn());
+			
+			// index of the first element
 			index = 0;
+			
+			// find the index of the closest in position
 			for(int j = 1; j < portsTemp.size(); j++) {
 				d1 = points.getLast().calculateDistance(portsTemp.get(j).getIn());
 				if (d1 < d0) {
@@ -205,8 +212,12 @@ public class ImageScanner {
 					index = j;
 				}
 			}
+			
+			// add the in position and out position to the "route list"
 			points.add(portsTemp.get(index).getIn());
 			points.add(portsTemp.get(index).getOut());
+			
+			// remove the port (in and out) from the list - it should only appear in the "route list" once
 			portsTemp.remove(index);
 		}
 		return points;
