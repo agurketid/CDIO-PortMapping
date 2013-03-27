@@ -2,6 +2,7 @@ package main;
 
 import static com.googlecode.javacv.cpp.opencv_core.CV_AA;
 
+
 import static com.googlecode.javacv.cpp.opencv_core.CV_RGB;
 import static com.googlecode.javacv.cpp.opencv_core.cvCreateImage;
 import static com.googlecode.javacv.cpp.opencv_core.cvGetSize;
@@ -10,24 +11,31 @@ import static com.googlecode.javacv.cpp.opencv_core.cvPoint;
 import static com.googlecode.javacv.cpp.opencv_core.cvRectangle;
 import static com.googlecode.javacv.cpp.opencv_highgui.cvLoadImage;
 import static com.googlecode.javacv.cpp.opencv_highgui.cvSaveImage;
-import static com.googlecode.javacv.cpp.opencv_imgproc.CV_CHAIN_APPROX_SIMPLE;
-import static com.googlecode.javacv.cpp.opencv_imgproc.CV_MEDIAN;
-import static com.googlecode.javacv.cpp.opencv_imgproc.CV_RETR_LIST;
-import static com.googlecode.javacv.cpp.opencv_imgproc.CV_THRESH_BINARY_INV;
-import static com.googlecode.javacv.cpp.opencv_imgproc.cvBoundingRect;
-import static com.googlecode.javacv.cpp.opencv_imgproc.cvFindContours;
-import static com.googlecode.javacv.cpp.opencv_imgproc.cvSmooth;
-import static com.googlecode.javacv.cpp.opencv_imgproc.cvThreshold;
+//import static com.googlecode.javacv.cpp.opencv_imgproc.CV_CHAIN_APPROX_SIMPLE;
+//import static com.googlecode.javacv.cpp.opencv_imgproc.CV_MEDIAN;
+//import static com.googlecode.javacv.cpp.opencv_imgproc.CV_RETR_LIST;
+//import static com.googlecode.javacv.cpp.opencv_imgproc.CV_THRESH_BINARY_INV;
+//import static com.googlecode.javacv.cpp.opencv_imgproc.cvBoundingRect;
+//import static com.googlecode.javacv.cpp.opencv_imgproc.cvFindContours;
+//import static com.googlecode.javacv.cpp.opencv_imgproc.cvSmooth;
+//import static com.googlecode.javacv.cpp.opencv_imgproc.cvThreshold;
 import java.util.ArrayList;
+import java.util.LinkedList;
+
 import main.Block.Color;
 import com.googlecode.javacpp.Loader;
 import com.googlecode.javacv.CanvasFrame;
 import com.googlecode.javacv.cpp.opencv_core.CvContour;
+import com.googlecode.javacv.cpp.opencv_core.CvLineIterator;
 import com.googlecode.javacv.cpp.opencv_core.CvMemStorage;
 import com.googlecode.javacv.cpp.opencv_core.CvRect;
 import com.googlecode.javacv.cpp.opencv_core.CvScalar;
 import com.googlecode.javacv.cpp.opencv_core.CvSeq;
 import com.googlecode.javacv.cpp.opencv_core.IplImage;
+import com.googlecode.javacv.cpp.opencv_legacy.CvDrawShape;
+import com.googlecode.javacv.cpp.opencv_highgui.*;
+import static com.googlecode.javacv.cpp.opencv_core.*;
+import static com.googlecode.javacv.cpp.opencv_imgproc.*;
 
 public class ImageScanner {
 	static CvScalar minRed = CV_RGB(100,0,0);
@@ -36,12 +44,14 @@ public class ImageScanner {
 	static CvScalar maxGreen = CV_RGB(100,255,100);
 	
 	public static void main(String[] args) {
-		IplImage orgImg = cvLoadImage("capture3.jpg");
+		IplImage orgImg = cvLoadImage("test.jpg");
 		ArrayList<Block> greenBlocks = findBlocks(orgImg, Color.GREEN);
 		ArrayList<Block> redBlocks = findBlocks(orgImg, Color.RED);
 		redBlocks.remove(redBlocks.size()-1);
 		greenBlocks.remove(greenBlocks.size()-1);
-		ArrayList<Port> ports = findPorts(redBlocks, greenBlocks);
+		ArrayList<Port> ports = mapPorts(redBlocks, greenBlocks);
+		
+
 		
 		/*
 		 * <TEST>
@@ -63,6 +73,7 @@ public class ImageScanner {
 				ports.get(i).getGreen().getCenter() + " - in: " + ports.get(i).getIn() + " - out: " + ports.get(i).getOut());
 		}
 		
+		
 		// Show ins and outs for ports
 		for (int i = 0; i < ports.size(); i++) {
 	
@@ -71,6 +82,27 @@ public class ImageScanner {
 			cvRectangle(orgImg, cvPoint(ports.get(i).getOut().getX(), ports.get(i).getOut().getY()), 
 					cvPoint(ports.get(i).getOut().getX(), ports.get(i).getOut().getY()), CvScalar.MAGENTA, 3, CV_AA, 0);
 		}
+		
+		// DRAW LINE
+		Position start = new Position(150,50);
+		LinkedList<Position> points = mapRoute(ports, start);
+		System.out.println(points.size());
+		for(int i = 0; i < points.size(); i++) {
+			if (i != points.size()-1) {
+				CvPoint p1 = new CvPoint(points.get(i).getX(),points.get(i).getY());
+				CvPoint p2 = new CvPoint(points.get(i+1).getX(),points.get(i+1).getY());
+				cvLine(orgImg, p1, p2, CV_RGB(255,255,0), 2, CV_AA, 0);
+				System.out.println(points.get(i) + " ; " + points.get(i+1));
+			} else {
+				CvPoint p1 = new CvPoint(points.get(i).getX(),points.get(i).getY());
+				CvPoint p2 = new CvPoint(points.get(1).getX(),points.get(1).getY());
+				cvLine(orgImg, p1, p2, CV_RGB(255,255,0), 2, CV_AA, 0);
+				System.out.println(points.get(i) + " ; " + points.get(0));
+			}
+			//System.out.println(p2.toString());
+		}
+		
+
 
 		// Show picture
 		CanvasFrame cnvs=new CanvasFrame("Beam");
@@ -128,7 +160,7 @@ public class ImageScanner {
 	/*
 	 * FIND PORTS - MAPS RED AND GREEN BLOCK TOGETHER TO PORTS
 	 */
-	public static ArrayList<Port> findPorts(ArrayList<Block> redBlocks, ArrayList<Block> greenBlocks) {
+	public static ArrayList<Port> mapPorts(ArrayList<Block> redBlocks, ArrayList<Block> greenBlocks) {
 		ArrayList<Port> ports = new ArrayList<Port>();
 		int index = 0; // the index of the closest green Block - from the red Block
 		int d0, d1; // variables to store distance measurements 
@@ -151,4 +183,32 @@ public class ImageScanner {
 		}
 		return ports;
 	}	
+	
+	/*
+	 * CALCULATE ROUTE
+	 */
+	public static LinkedList<Position> mapRoute(ArrayList<Port> ports, Position start) {
+		LinkedList<Position> points = new LinkedList<Position>();
+		ArrayList<Port> portsTemp = ports;
+		points.add(start);
+		int d0, d1;
+		int index = 0;
+		
+		int size = ports.size();
+		for (int i = 0; i < size; i++) {
+			d0 = points.getLast().calculateDistance(portsTemp.get(0).getIn());
+			index = 0;
+			for(int j = 1; j < portsTemp.size(); j++) {
+				d1 = points.getLast().calculateDistance(portsTemp.get(j).getIn());
+				if (d1 < d0) {
+					d0 = d1;
+					index = j;
+				}
+			}
+			points.add(portsTemp.get(index).getIn());
+			points.add(portsTemp.get(index).getOut());
+			portsTemp.remove(index);
+		}
+		return points;
+	}
 }
