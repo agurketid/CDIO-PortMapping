@@ -16,9 +16,15 @@ public class Position {
 	}
 	
 	public int calculateDistance(Position p) {
-		int dx = this.x - p.getX();
-		int dy = this.y - p.getY();
+		int dx = x - p.getX();
+		int dy = y - p.getY();
 		return (int) Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+	}
+	
+	public double calculateSlope(Position p) {
+		double dx = p.getX() - x;
+		double dy = p.getY() - y;
+		return dy/dx;
 	}
 	
 	public int getX() {

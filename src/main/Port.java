@@ -15,8 +15,8 @@ public class Port {
 	
 	// calculates the entry (in) and exit (out) points of a port
 	private void calculateInAndOut() {
-		int vX = (-1*(green.getCenter().getY() - red.getCenter().getY())) / 3;
-		int vY = (green.getCenter().getX() - red.getCenter().getX()) / 3;
+		int vX = (-1*(green.getCenter().getY() - red.getCenter().getY())) / 2;
+		int vY = (green.getCenter().getX() - red.getCenter().getX()) / 2;
 		int centerX = (red.getCenter().getX() + green.getCenter().getX()) / 2;
 		int centerY = (red.getCenter().getY() + green.getCenter().getY()) / 2;
 		
