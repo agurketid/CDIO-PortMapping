@@ -16,6 +16,8 @@ import java.util.LinkedList;
 import main.Block.Color;
 import com.googlecode.javacpp.Loader;
 import com.googlecode.javacv.CanvasFrame;
+import com.googlecode.javacv.FrameGrabber.Exception;
+import com.googlecode.javacv.OpenCVFrameGrabber;
 import com.googlecode.javacv.cpp.opencv_core.CvContour;
 import com.googlecode.javacv.cpp.opencv_core.CvMemStorage;
 import com.googlecode.javacv.cpp.opencv_core.CvRect;
@@ -27,22 +29,19 @@ import static com.googlecode.javacv.cpp.opencv_imgproc.*;
 
 public class ImageScanner {
 
-
-
 	static CvScalar minRed = CV_RGB(100,0,0);
 	static CvScalar maxRed = CV_RGB(255,70,130); 
-	static CvScalar minGreen = CV_RGB(0,100,0);
+	static CvScalar minGreen = CV_RGB(0,80,0);
 	static CvScalar maxGreen = CV_RGB(100,255,100);
-	static CvScalar minBlue = CV_RGB(0,0,150);
-	static CvScalar maxBlue = CV_RGB(150,150,255);
-	static CvScalar minYellow = CV_RGB(240,240,0);
-	static CvScalar maxYellow = CV_RGB(255,255,50);
-
+	static CvScalar minLightBlue = CV_RGB(0,80,120);
+	static CvScalar maxLightBlue = CV_RGB(80,170,190);
+	static CvScalar minDarkBlue = CV_RGB(0,0,40);
+	static CvScalar maxDarkBlue = CV_RGB(50,60,100);
 
 	public static void main(String[] args) {
 		long startTime = System.currentTimeMillis();
 
-		IplImage orgImg = cvLoadImage("test");
+		IplImage orgImg = cvLoadImage("capture2.jpg");
 		ArrayList<Block> greenBlocks = findBlocks(orgImg, Color.GREEN);
 		ArrayList<Block> redBlocks = findBlocks(orgImg, Color.RED);
 		redBlocks.remove(redBlocks.size()-1);
@@ -101,6 +100,7 @@ public class ImageScanner {
 
 		// DRAW LINE
 		Position start = robot.getMiddle();
+		//Position start = new Position(200, 200);
 		LinkedList<Position> points = mapRoute(ports, start);
 		System.out.println(points.size());
 		for(int i = 0; i < points.size(); i++) {
@@ -288,10 +288,10 @@ public class ImageScanner {
 		
 		// set color range - front = blue
 		if (part.equals("front")) {
-			cvInRangeS(orgImage, minBlue, maxBlue, imgThreshold);
+			cvInRangeS(orgImage, minLightBlue, maxLightBlue, imgThreshold);
 		} 
 		if (part.equals("back")) {
-			cvInRangeS(orgImage, minYellow, maxYellow, imgThreshold);
+			cvInRangeS(orgImage, minDarkBlue, maxDarkBlue, imgThreshold);
 		}	
 
 		// smooth image - median
@@ -375,4 +375,20 @@ public class ImageScanner {
 //			return "RIGHT";
 //		}
 	}
+	
+    static void captureImage() {
+        // 0-default camera, 1 - next...so on
+        final OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
+
+            try {
+            	IplImage img = grabber.grab();
+				grabber.start();
+				if (img != null) {
+					//cvSaveImage(name, img);
+					cvSaveImage("capture2.jpg",img);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    }
 }
