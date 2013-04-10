@@ -2,13 +2,14 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
-	<classpathentry kind="lib" path="/System/Library/Java/Extensions/javacpp.jar"/>
-	<classpathentry kind="lib" path="/System/Library/Java/Extensions/javacv-macosx-x86_64.jar"/>
-	<classpathentry kind="lib" path="/System/Library/Java/Extensions/javacv.jar"/>
-	<classpathentry kind="lib" path="/System/Library/Java/Extensions/opencv-2.4.4-macosx-x86_64.jar"/>
 	<classpathentry kind="lib" path="lib/javacpp.jar"/>
-	<classpathentry kind="lib" path="lib/javacv-macosx-x86_64.jar"/>
 	<classpathentry kind="lib" path="lib/javacv.jar"/>
 	<classpathentry kind="lib" path="lib/opencv-2.4.4-macosx-x86_64.jar"/>
+	<classpathentry kind="lib" path="C:/development/java/other/javacv-bin/javacpp.jar"/>
+	<classpathentry kind="lib" path="C:/development/java/other/javacv-bin/javacv.jar"/>
+	<classpathentry kind="lib" path="C:/development/java/other/javacv-bin/javacv-android-arm.jar"/>
+	<classpathentry kind="lib" path="C:/development/java/other/javacv-bin/javacv-windows-x86.jar"/>
+	<classpathentry kind="lib" path="C:/development/java/other/javacv-bin/javacv-windows-x86_64.jar"/>
+	<classpathentry kind="con" path="org.lejos.nxt.ldt.LEJOS_LIBRARY_CONTAINER/pc"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

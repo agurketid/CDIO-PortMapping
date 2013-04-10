@@ -13,6 +13,8 @@ import static com.googlecode.javacv.cpp.opencv_highgui.cvLoadImage;
 import static com.googlecode.javacv.cpp.opencv_highgui.cvSaveImage;
 import java.util.ArrayList;
 import java.util.LinkedList;
+
+import lejos.nxt.Motor;
 import main.Block.Color;
 import com.googlecode.javacpp.Loader;
 import com.googlecode.javacv.CanvasFrame;
@@ -31,35 +33,84 @@ public class ImageScanner {
 
 	static CvScalar minRed = CV_RGB(100,0,0);
 	static CvScalar maxRed = CV_RGB(255,70,130); 
-	static CvScalar minGreen = CV_RGB(0,80,0);
-	static CvScalar maxGreen = CV_RGB(100,255,100);
+	static CvScalar minGreen = CV_RGB(0,50,0);
+	static CvScalar maxGreen = CV_RGB(60,150,60);
 	static CvScalar minLightBlue = CV_RGB(0,80,120);
 	static CvScalar maxLightBlue = CV_RGB(80,170,190);
 	static CvScalar minDarkBlue = CV_RGB(0,0,40);
 	static CvScalar maxDarkBlue = CV_RGB(50,60,100);
-
+	static CaptureImage ci = new CaptureImage();
+	static IplImage orgImg;
+	
 	public static void main(String[] args) {
 		long startTime = System.currentTimeMillis();
+		Motor.A.setSpeed(100);
+		Position robotFront;
+		Position robotBack;
+		Position start;
+		LinkedList<Position> points = new LinkedList<Position>();
+		ArrayList<Block> greenBlocks = new ArrayList<Block>();
+		ArrayList<Block> redBlocks = new ArrayList<Block>();
+		ArrayList<Port> ports = new ArrayList<Port>();
+		
+		while(true){
+			
+			ci.run();
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			orgImg = cvLoadImage("capture2.jpg");
+			
+			
+			greenBlocks = findBlocks(orgImg, Color.GREEN);
+			redBlocks = findBlocks(orgImg, Color.RED);
+			redBlocks.remove(redBlocks.size()-1);
+			greenBlocks.remove(greenBlocks.size()-1);
+			ports = mapPorts(redBlocks, greenBlocks);
 
-		IplImage orgImg = cvLoadImage("capture2.jpg");
-		ArrayList<Block> greenBlocks = findBlocks(orgImg, Color.GREEN);
-		ArrayList<Block> redBlocks = findBlocks(orgImg, Color.RED);
-		redBlocks.remove(redBlocks.size()-1);
-		greenBlocks.remove(greenBlocks.size()-1);
-		ArrayList<Port> ports = mapPorts(redBlocks, greenBlocks);
-
-		Position robotFront = findRobot(orgImg, "front");
-		Position robotBack = findRobot(orgImg, "back");
-		Robot robot = new Robot(robotFront, robotBack);
-
-		long middle = System.currentTimeMillis();
-		long middleTime = middle - startTime;
-		System.out.println("TIME: " + middleTime);
+	
+			//ci.run();
+			//orgImg = cvLoadImage("capture2.jpg");
+			robotFront = findRobot(orgImg, "front");
+			robotBack = findRobot(orgImg, "back");
+			Robot robot = new Robot(robotFront, robotBack);
+			start = robot.getMiddle();
+			System.out.println(robot.getMiddle().toString());
+			points = mapRoute(ports, start);
+			System.out.println("points: " + points.size());
+			String move = calculateRobotMovement(robot, points);
+			System.out.println(move);
+			
+			if (move.equals("RIGHT")) {
+				Motor.A.setSpeed(400);
+				Motor.A.backward();
+				Motor.B.setSpeed(300);
+				Motor.B.backward();
+			} else {
+				Motor.B.setSpeed(400);
+				Motor.B.backward();
+				Motor.A.setSpeed(300);
+				Motor.A.backward();
+			}
+	
+			long middle = System.currentTimeMillis();
+			long middleTime = middle - startTime;
+			System.out.println("TIME: " + middleTime);
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 
 
 		/*
 		 * BEGIN TEST
-		 */
+		 
 
 		// DRAW ROBOT
 		cvRectangle(orgImg, cvPoint(robotFront.getX(), robotFront.getY()), cvPoint(robotFront.getX()+5, robotFront.getY()+5),
@@ -146,12 +197,14 @@ public class ImageScanner {
 		CanvasFrame cnvs=new CanvasFrame("CUDACruiser");
 		cnvs.setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
 		cnvs.showImage(orgImg);
-		/*
+		
 		 * END TEST>
-		 */
+		 
+
 		long end = System.currentTimeMillis();
 		long endTime = end - startTime;
 		System.out.println("TIME: " + endTime);
+	*/
 	}
 
 	/*
@@ -246,6 +299,7 @@ public class ImageScanner {
 
 		// Add start position to the "route list"
 		points.add(start);
+		System.out.println("size: " + points.size());
 
 		int d0, d1; // variables to store distance measurements 
 		int index = 0; // index on the array of the closest point
@@ -271,9 +325,13 @@ public class ImageScanner {
 			// add the in position and out position to the "route list"
 			points.add(portsTemp.get(index).getIn());
 			points.add(portsTemp.get(index).getOut());
+			System.out.println("size: " + points.size());
 
 			// remove the port (in and out) from the list - it should only appear in the "route list" once
 			portsTemp.remove(index);
+		}
+		if (start.calculateDistance(points.get(1)) < 50) {
+			points.remove(1);
 		}
 		return points;
 	}
@@ -370,11 +428,17 @@ public class ImageScanner {
 //				(frontRight && dir && left && !up) || (frontRight && dir && left && up) || 
 //				(!frontRight && !dir && left && up) || (!frontRight && dir && !left && up) || 
 //				(frontRight && !dir && left && !up) || (!frontRight && dir && !left && !up)) {
-//			return "LEFT";
+//			return "LEFT";s
 //		} else {
 //			return "RIGHT";
 //		}
 	}
+	
+/*	static int calculateSpeed(Position start, Position next, double direction) {
+		double slope = start.calculateSlope(next);
+		
+		 double angle = Math.atan((slope1 - slope2) / (1 - (slope1 * slope2)));
+	}*/
 	
     static void captureImage() {
         // 0-default camera, 1 - next...so on
@@ -391,4 +455,5 @@ public class ImageScanner {
 				e.printStackTrace();
 			}
     }
+
 }

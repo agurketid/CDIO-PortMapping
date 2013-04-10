@@ -10,32 +10,39 @@ import static com.googlecode.javacv.cpp.opencv_highgui.*;
 public class CaptureImage {
     
     IplImage image;
-    static CanvasFrame canvas = new CanvasFrame("Web Cam");
+ //   static CanvasFrame canvas = new CanvasFrame("Web Cam");
     static BufferedImage bufferedImage;
+    final OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
     
-    public CaptureImage() {
-        canvas.setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
-    }
+//    public CaptureImage() {
+//        canvas.setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
+//    }
     
-    static void captureFrame() {
+    public void captureFrame() {
         // 0-default camera, 1 - next...so on
-        final OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
         try {
-            grabber.start();
-            IplImage img = grabber.grab();
+            IplImage img = this.grabber.grab();
             if (img != null) {
                 //cvSaveImage(name, img);
                 cvSaveImage("capture2.jpg",img);
-                canvas.showImage(img);
+             //   canvas.showImage(img);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    public static void main(String[] args) throws InterruptedException {
-        while(true){
+    public void run() {
+    		startGrabber();
             captureFrame(); 
-           //Thread.sleep(10);
         }
-    }     
+      
+    public void startGrabber(){
+    	try {
+			this.grabber.start();
+		} catch (com.googlecode.javacv.FrameGrabber.Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	
+    }
 }
