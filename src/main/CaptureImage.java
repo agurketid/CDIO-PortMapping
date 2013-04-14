@@ -5,6 +5,8 @@ import java.awt.image.BufferedImage;
 import com.googlecode.javacv.CanvasFrame;
 import com.googlecode.javacv.OpenCVFrameGrabber;
 import com.googlecode.javacv.cpp.opencv_core.IplImage;
+
+import static com.googlecode.javacv.cpp.opencv_core.cvScale;
 import static com.googlecode.javacv.cpp.opencv_highgui.*;
 
 public class CaptureImage {
@@ -24,6 +26,7 @@ public class CaptureImage {
             IplImage img = this.grabber.grab();
             if (img != null) {
                 //cvSaveImage(name, img);
+            	cvScale(img,img,4.0, 0.0);
                 cvSaveImage("image.jpg",img);
              //   canvas.showImage(img);
             }
