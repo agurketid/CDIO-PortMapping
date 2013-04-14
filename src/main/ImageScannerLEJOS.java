@@ -29,7 +29,7 @@ import com.googlecode.javacv.cpp.opencv_core.IplImage;
 import static com.googlecode.javacv.cpp.opencv_core.*;
 import static com.googlecode.javacv.cpp.opencv_imgproc.*;
 
-public class ImageScanner {
+public class ImageScannerLEJOS {
 
 	static CvScalar minRed = CV_RGB(100,0,0);
 	static CvScalar maxRed = CV_RGB(255,70,130); 

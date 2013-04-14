@@ -24,7 +24,7 @@ public class CaptureImage {
             IplImage img = this.grabber.grab();
             if (img != null) {
                 //cvSaveImage(name, img);
-                cvSaveImage("capture2.jpg",img);
+                cvSaveImage("image.jpg",img);
              //   canvas.showImage(img);
             }
         } catch (Exception e) {
