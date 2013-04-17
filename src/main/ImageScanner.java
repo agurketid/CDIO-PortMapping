@@ -44,13 +44,14 @@ public class ImageScanner {
 	static ArrayList<Block> greenBlocks = new ArrayList<Block>();
 	static ArrayList<Block> redBlocks = new ArrayList<Block>();
 	static ArrayList<Port> ports = new ArrayList<Port>();
+	static Position robotFront;
+	static Position robotBack;
+	static Position start;
+	static double globalDirection;
 	
 	public static void main(String[] args) {
 		long startTime = System.currentTimeMillis();
 		Motor.A.setSpeed(100);
-		Position robotFront;
-		Position robotBack;
-		Position start;
 		int speedDifference;
 		final int robotSpeed = 400;
 		
@@ -293,6 +294,7 @@ public class ImageScanner {
 	 */
 	public static String calculateRobotMovement(Robot robot, LinkedList<Position> points) {
 		
+		globalDirection = robot.getDirection();
 		boolean frontRight = robot.getFront().getX() > robot.getBack().getX();
 		boolean dir = robot.getDirection() > robot.getMiddle().calculateSlope(points.get(1));
 		boolean left = robot.getMiddle().getX() < points.get(1).getX();
@@ -368,4 +370,32 @@ public class ImageScanner {
     	
     	return speed;
     }
+    public static LinkedList<Position> getPoints(){
+    	return points;
+    }
+    public static ArrayList<Block> getGreenBlocks(){
+    	return greenBlocks;
+    }
+    public static ArrayList<Block> getRedBlocks(){
+    	return redBlocks;
+    }
+    public static ArrayList<Port> getPorts(){
+    	return ports;
+    }
+    public static IplImage getImage(){
+    	return orgImg;
+    }
+    public static Position getRobotFront(){
+    	return robotFront;
+    }
+    public static Position getRobotBack(){
+    	return robotBack;
+    }
+    public static Position getStart(){
+    	return start;
+    }
+    public static double getDirection(){
+    	return globalDirection;
+    }
+
 }
