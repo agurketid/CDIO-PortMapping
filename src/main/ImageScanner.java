@@ -11,7 +11,16 @@ import static com.googlecode.javacv.cpp.opencv_highgui.cvLoadImage;
 import static com.googlecode.javacv.cpp.opencv_highgui.cvSaveImage;
 import java.util.ArrayList;
 import java.util.LinkedList;
+
+import javax.bluetooth.RemoteDevice;
+
+
 import lejos.nxt.Motor;
+import lejos.nxt.remote.*;
+import lejos.pc.comm.NXTComm;
+import lejos.pc.comm.NXTCommException;
+import lejos.pc.comm.NXTCommFactory;
+import lejos.pc.comm.NXTInfo;
 import main.Block.Color;
 import com.googlecode.javacpp.Loader;
 import com.googlecode.javacv.CanvasFrame;
@@ -29,23 +38,20 @@ import static com.googlecode.javacv.cpp.opencv_imgproc.*;
 public class ImageScanner {
 
 	// color ranges
-	static CvScalar minRed = CV_RGB(240,0,10);
-	static CvScalar maxRed = CV_RGB(255,10,70); 
-	static CvScalar minGreen = CV_RGB(20,160,10);
-	static CvScalar maxGreen = CV_RGB(100,255,50);
-	static CvScalar minLightBlue = CV_RGB(45,240,240);
+	static CvScalar minRed = CV_RGB(200,0,0);
+	static CvScalar maxRed = CV_RGB(255,70,70); 
+	static CvScalar minGreen = CV_RGB(0,80,0);
+	static CvScalar maxGreen = CV_RGB(60,255,60);
+	static CvScalar minLightBlue = CV_RGB(0,230,230);
 	static CvScalar maxLightBlue = CV_RGB(120,255,255);
 	static CvScalar minDarkBlue = CV_RGB(20,70,180);
-	static CvScalar maxDarkBlue = CV_RGB(70,130,235);
+	static CvScalar maxDarkBlue = CV_RGB(120,200,255);
 
 	static CaptureImage ci = new CaptureImage();
 	static IplImage orgImg;
-	static LinkedList<Position> points = new LinkedList<Position>();
-	static ArrayList<Block> greenBlocks = new ArrayList<Block>();
-	static ArrayList<Block> redBlocks = new ArrayList<Block>();
-	static ArrayList<Port> ports = new ArrayList<Port>();
 	
 	public static void main(String[] args) {
+		
 		long startTime = System.currentTimeMillis();
 		Motor.A.setSpeed(100);
 		Position robotFront;
@@ -53,13 +59,10 @@ public class ImageScanner {
 		Position start;
 		int speedDifference;
 		final int robotSpeed = 400;
-		
-		// map image to objects
-		greenBlocks = findBlocks(orgImg, Color.GREEN);
-		redBlocks = findBlocks(orgImg, Color.RED);
-		redBlocks.remove(redBlocks.size()-1);
-		greenBlocks.remove(greenBlocks.size()-1);
-		ports = mapPorts(redBlocks, greenBlocks);
+		LinkedList<Position> points = new LinkedList<Position>();
+		ArrayList<Block> greenBlocks = new ArrayList<Block>();
+		ArrayList<Block> redBlocks = new ArrayList<Block>();
+		ArrayList<Port> ports = new ArrayList<Port>();
 		
 		while(true){
 			
@@ -74,6 +77,16 @@ public class ImageScanner {
 			// load taken image
 			orgImg = cvLoadImage("image.jpg");
 			
+			// map image to objects
+			greenBlocks = findBlocks(orgImg, Color.GREEN);
+			redBlocks = findBlocks(orgImg, Color.RED);
+			redBlocks.remove(redBlocks.size()-1);
+			System.out.println("Red blocks: " + redBlocks.size());
+			greenBlocks.remove(greenBlocks.size()-1);
+			System.out.println("Green blocks: " + greenBlocks.size());
+			ports = mapPorts(redBlocks, greenBlocks);
+			System.out.println("Ports: " + ports.size());
+			
 			// find robot on image an map to Robot object
 			robotFront = findRobot(orgImg, "front");
 			robotBack = findRobot(orgImg, "back");
@@ -83,7 +96,7 @@ public class ImageScanner {
 			
 			// find route for robot
 			points = mapRoute(ports, start);
-				//System.out.println("points: " + points.size());
+			System.out.println("Points: " + points.size());
 			
 			// calculate robot movement
 			String move = calculateRobotMovement(robot, points);
@@ -94,12 +107,14 @@ public class ImageScanner {
 			if (move.equals("RIGHT")) {
 				Motor.A.setSpeed(robotSpeed);
 				Motor.A.backward();
-				Motor.B.setSpeed(robotSpeed-speedDifference);
+				//Motor.B.setSpeed(robotSpeed-speedDifference);
+				Motor.B.setSpeed(300);
 				Motor.B.backward();
 			} else { // move.equals("LEFT")
 				Motor.B.setSpeed(robotSpeed);
 				Motor.B.backward();
-				Motor.A.setSpeed(robotSpeed-speedDifference);
+				//Motor.A.setSpeed(robotSpeed-speedDifference);
+				Motor.A.setSpeed(300);
 				Motor.A.backward();
 			}
 	
@@ -201,7 +216,6 @@ public class ImageScanner {
 
 		// Add start position to the "route list"
 		points.add(start);
-		System.out.println("size: " + points.size());
 
 		int d0, d1; // variables to store distance measurements 
 		int index = 0; // index on the array of the closest point
@@ -227,7 +241,7 @@ public class ImageScanner {
 			// add the in position and out position to the "route list"
 			points.add(portsTemp.get(index).getIn());
 			points.add(portsTemp.get(index).getOut());
-			System.out.println("size: " + points.size());
+			//System.out.println("size: " + points.size());
 
 			// remove the port (in and out) from the list - it should only appear in the "route list" once
 			portsTemp.remove(index);
@@ -301,26 +315,22 @@ public class ImageScanner {
 		// up
 		if ((frontRight && !dir && !left && !up) || (!frontRight && dir && !left && !up) 
 				|| (frontRight && dir && left && !up)) {
-			System.out.println(1);
 			return "LEFT";
 		}
 		
 		// down
 		if ((frontRight && dir && left && up) || (!frontRight && !dir && left && up) 
 				|| (!frontRight && dir && !left && up)) {
-			System.out.println(2);
 			return "LEFT";
 		}
 		
 		// right - this could be deleted, because the cases are already covered
 		if ((frontRight && dir && left && !up) || (frontRight && dir && left && up)) {
-			System.out.println(3);
 			return "LEFT";
 		}
 		
 		// left
 		if ((!frontRight && dir && !left && up) || (!frontRight && dir && !left && !up)) {
-			System.out.println(4);
 			return "LEFT";
 		}
 		
@@ -337,35 +347,26 @@ public class ImageScanner {
     	
     	// slope (m2) for the line of the desired direction
     	double m2 = robot.getMiddle().calculateSlope(points.get(1));
-    	double m;
-    	
-    	if (m2 > m1) {
-    		m = m2-m1;
-    	} else {
-    		m = m1-m2;
-    	}
     	
     	// calculate angle between the two lines
-    	double angle = Math.atan(m/(1+m1*m2));
-    	int speed = 0;
+    	double angle = Math.atan(Math.abs(m2-m1)/(1+m1*m2));
     	
-    	// set speed depending on the size of the angle
-    	if (angle <= 10) {
-    		speed = 25;
-    	}
-    	if (angle <= 20 && angle > 10) {
-    		speed = 50;
-    	}
-    	if (angle <= 30 && angle > 20) {
-    		speed = 75;
-    	}
-    	if (angle <= 40 && angle > 30) {
-    		speed = 100;
-    	}
-    	if (angle > 50) {
-    		speed = 125;
-    	}
-    	
-    	return speed;
+    	return (int) (angle * 2.5);
+//    	// set speed depending on the size of the angle
+//    	if (angle <= 10) {
+//    		speed = 25;
+//    	}
+//    	if (angle <= 20 && angle > 10) {
+//    		speed = 50;
+//    	}
+//    	if (angle <= 30 && angle > 20) {
+//    		speed = 75;
+//    	}
+//    	if (angle <= 40 && angle > 30) {
+//    		speed = 100;
+//    	}
+//    	if (angle > 50) {
+//    		speed = 125;
+//    	}
     }
 }
