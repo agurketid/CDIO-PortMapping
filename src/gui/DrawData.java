@@ -31,8 +31,8 @@ public class DrawData {
 		this.robotBack_y = (ImageScanner.getRobotBack()).getY();
 		this.start = ImageScanner.getStart();
 		this.direction = ImageScanner.getDirection();
-		
-		//Run drawing methods.
+
+		// Run drawing methods.
 		drawRobot();
 		drawBlocks();
 		drawLine();
@@ -107,15 +107,63 @@ public class DrawData {
 				System.out.println(points.get(i) + " ; " + points.get(0));
 			}
 		}
-		
+
 		CvPoint r1 = new CvPoint(start.getX(), start.getY());
 		CvPoint r2;
 		if (robotFront_x < robotBack_x) {
-		r2 = new CvPoint(start.getX()-100, (int) (start.getY()-(100*direction)));
+			r2 = new CvPoint(start.getX() - 100,
+					(int) (start.getY() - (100 * direction)));
 		} else {
-		r2 = new CvPoint(start.getX()+100, (int) (start.getY()+(100*direction)));
+			r2 = new CvPoint(start.getX() + 100,
+					(int) (start.getY() + (100 * direction)));
 		}
-		cvLine(image, r1, r2, CV_RGB(255,0,0), 1, CV_AA, 0);
+		cvLine(image, r1, r2, CV_RGB(255, 0, 0), 1, CV_AA, 0);
 	}
 
+	public int getPortCount() {
+		return ports.size();
+	}
+
+	public int getRedBlockCount() {
+		return ImageScanner.getRedBlocks().size();
+	}
+
+	public int getGreenBlockCount() {
+		return ImageScanner.getGreenBlocks().size();
+	}
+
+	public int getTotalPoints() {
+		return ImageScanner.getPoints().size();
+	}
+
+	public double getDirectionSlope() {
+		return direction;
+	}
+	public Position getRobotCord(){
+		return start;
+	}
+
+	public ArrayList<Position> getPortCords(int color) {
+		ArrayList<Position> blockGreenCordList = new ArrayList<Position>();
+		ArrayList<Position> blockRedCordList = new ArrayList<Position>();
+		
+		// Get Greens
+		if (color == 0) {
+			for (int i = 0; i <= ports.size(); i++) {
+				blockGreenCordList.add(new Position(ports.get(i).getGreen()
+						.getCenter().getX(), ports.get(i).getGreen()
+						.getCenter().getY()));
+			}
+			return blockGreenCordList;
+		}
+		//Get Reds
+		else {
+			for (int i = 0; i <= ports.size(); i++) {
+				blockRedCordList.add(new Position(ports.get(i).getRed()
+						.getCenter().getX(), ports.get(i).getRed()
+						.getCenter().getY()));
+			}
+			return blockRedCordList;
+		}
+	}
 }
