@@ -1,12 +1,12 @@
 package main;
 
 import static com.googlecode.javacv.cpp.opencv_core.CV_AA;
+
 import static com.googlecode.javacv.cpp.opencv_core.CV_RGB;
 import static com.googlecode.javacv.cpp.opencv_core.cvCreateImage;
-import static com.googlecode.javacv.cpp.opencv_core.cvGetSize;
-import static com.googlecode.javacv.cpp.opencv_core.cvInRangeS;
-import static com.googlecode.javacv.cpp.opencv_core.cvPoint;
-import static com.googlecode.javacv.cpp.opencv_core.cvRectangle;
+import static com.googlecode.javacv.cpp.opencv_core.*;
+
+
 import static com.googlecode.javacv.cpp.opencv_highgui.cvLoadImage;
 import static com.googlecode.javacv.cpp.opencv_highgui.cvSaveImage;
 import java.util.ArrayList;
@@ -29,6 +29,7 @@ import com.googlecode.javacv.OpenCVFrameGrabber;
 import com.googlecode.javacv.cpp.opencv_core.CvContour;
 import com.googlecode.javacv.cpp.opencv_core.CvMemStorage;
 import com.googlecode.javacv.cpp.opencv_core.CvRect;
+import com.googlecode.javacv.cpp.opencv_core.*;
 import com.googlecode.javacv.cpp.opencv_core.CvScalar;
 import com.googlecode.javacv.cpp.opencv_core.CvSeq;
 import com.googlecode.javacv.cpp.opencv_core.IplImage;
@@ -38,38 +39,79 @@ import static com.googlecode.javacv.cpp.opencv_imgproc.*;
 public class ImageScanner {
 
 	// color ranges
-	static CvScalar minRed = CV_RGB(200,0,0);
-	static CvScalar maxRed = CV_RGB(255,70,70); 
-	static CvScalar minGreen = CV_RGB(0,80,0);
+	static CvScalar minRed = CV_RGB(100,0,0);
+	static CvScalar maxRed = CV_RGB(160,50,50); 
+	static CvScalar minGreen = CV_RGB(0,55,0);
 	static CvScalar maxGreen = CV_RGB(60,255,60);
-	static CvScalar minLightBlue = CV_RGB(0,230,230);
-	static CvScalar maxLightBlue = CV_RGB(120,255,255);
-	static CvScalar minDarkBlue = CV_RGB(20,70,180);
-	static CvScalar maxDarkBlue = CV_RGB(120,200,255);
+	static CvScalar minLightBlue = CV_RGB(0,60,90);
+	static CvScalar maxLightBlue = CV_RGB(70,170,200);
+	static CvScalar minDarkBlue = CV_RGB(170,170,170);
+	static CvScalar maxDarkBlue = CV_RGB(255,255,255);
+//	static CvScalar minDarkBlue = CV_RGB(0,20,60);
+//	static CvScalar maxDarkBlue = CV_RGB(70,90,150);
+//	static CvScalar minRed = CV_RGB(100,0,0);
+//	static CvScalar maxRed = CV_RGB(200,70,70); 
+//	static CvScalar minGreen = CV_RGB(0,60,0);
+//	static CvScalar maxGreen = CV_RGB(60,100,60);
+//	static CvScalar minLightBlue = CV_RGB(0,100,150);
+//	static CvScalar maxLightBlue = CV_RGB(100,255,255);
+//	static CvScalar minDarkBlue = CV_RGB(30,30,30);
+//	static CvScalar maxDarkBlue = CV_RGB(50,60,80);
+//	static CvScalar minRed = CV_RGB(240,0,0);
+//	static CvScalar maxRed = CV_RGB(255,20,20); 
+//	static CvScalar minGreen = CV_RGB(0,240,0);
+//	static CvScalar maxGreen = CV_RGB(20,255,20);
+//	static CvScalar minLightBlue = CV_RGB(0,230,240);
+//	static CvScalar maxLightBlue = CV_RGB(20,255,255);
+//	static CvScalar minDarkBlue = CV_RGB(0,0,240);
+//	static CvScalar maxDarkBlue = CV_RGB(20,20,255);
 
 	static CaptureImage ci = new CaptureImage();
 	static IplImage orgImg;
+	static ArrayList<Position> points = new ArrayList<Position>();
+	static ArrayList<Block> greenBlocks =  new ArrayList<Block>();
+	static ArrayList<Block> redBlocks = new ArrayList<Block>();
+	static ArrayList<Port> ports =  new ArrayList<Port>();
+	static Robot robot = new Robot();
 	
 	public static void main(String[] args) {
 		
 		long startTime = System.currentTimeMillis();
-		Motor.A.setSpeed(100);
+		Motor.A.setSpeed(100); 
 		Position robotFront;
 		Position robotBack;
 		Position start;
 		int speedDifference;
-		final int robotSpeed = 400;
-		LinkedList<Position> points = new LinkedList<Position>();
-		ArrayList<Block> greenBlocks = new ArrayList<Block>();
-		ArrayList<Block> redBlocks = new ArrayList<Block>();
-		ArrayList<Port> ports = new ArrayList<Port>();
+		final int robotSpeed = 250;
+		
+		ci.run();
+		try {
+			Thread.sleep(10);
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		// load taken image
+		orgImg = cvLoadImage("image.jpg");
+		 
+		// map image to objects
+		greenBlocks = findBlocks(orgImg, Color.GREEN);
+		greenBlocks.remove(greenBlocks.size()-1);
+		System.out.println("Green blocks: " + greenBlocks.size());
+		
+		redBlocks = findBlocks(orgImg, Color.RED);
+		redBlocks.remove(redBlocks.size()-1);
+		System.out.println("Red blocks: " + redBlocks.size());
+		
+		ports = mapPorts(redBlocks, greenBlocks);
+		
 		
 		CanvasFrame cnvs=new CanvasFrame("CUDACruiser");
-		
-		while(true){
-			
-			// take picture and save picture as capture.jpg (in CaptureImage class)
-			ci.run();
+
+ 		while(true)	{
+ 			System.out.println("================================");
+			// take picture and save picture as image.jpg (in CaptureImage class)
+ 			ci.run();
 			try {
 				Thread.sleep(10);
 			} catch (InterruptedException e1) {
@@ -78,28 +120,21 @@ public class ImageScanner {
 			}
 			// load taken image
 			orgImg = cvLoadImage("image.jpg");
-			
-			// map image to objects
-			greenBlocks = findBlocks(orgImg, Color.GREEN);
-			redBlocks = findBlocks(orgImg, Color.RED);
-			redBlocks.remove(redBlocks.size()-1);
-			System.out.println("Red blocks: " + redBlocks.size());
-			greenBlocks.remove(greenBlocks.size()-1);
-			System.out.println("Green blocks: " + greenBlocks.size());
-			ports = mapPorts(redBlocks, greenBlocks);
+			 
 			System.out.println("Ports: " + ports.size());
 			
 			// find robot on image an map to Robot object
 			robotFront = findRobot(orgImg, "front");
+			System.out.println("Front: " + robotFront.toString());
 			robotBack = findRobot(orgImg, "back");
-			Robot robot = new Robot(robotFront, robotBack);
+			System.out.println("Back: " + robotBack.toString());
+			robot.robotInit(robotFront, robotBack);
 			start = robot.getMiddle();
 				//System.out.println(robot.getMiddle().toString());
 			
 			// find route for robot
-			points = mapRoute(ports, start);
-			System.out.println("Points: " + points.size());
-			
+			points = mapRoute(ports, start, robot);
+
 			// calculate robot movement
 			String move = calculateRobotMovement(robot, points);
 			System.out.println(move);
@@ -107,44 +142,34 @@ public class ImageScanner {
 			
 			// send move signals to robot
 			if (move.equals("RIGHT")) {
-				Motor.A.setSpeed(100);
+				Motor.A.setSpeed(robotSpeed);
 				Motor.A.backward();
-				//Motor.B.setSpeed(robotSpeed-speedDifference);
-				Motor.B.setSpeed(60);
+				Motor.B.setSpeed(robotSpeed-speedDifference);
+				//Motor.B.setSpeed(60);
 				Motor.B.backward();
 			} else { // move.equals("LEFT")
-				Motor.B.setSpeed(100);
+				Motor.B.setSpeed(robotSpeed);
 				Motor.B.backward();
-				//Motor.A.setSpeed(robotSpeed-speedDifference);
-				Motor.A.setSpeed(60);
+				Motor.A.setSpeed(robotSpeed-speedDifference);
+				//Motor.A.setSpeed(60);
 				Motor.A.backward();
 			}
 			
 			// DRAW ROBOT
-			cvRectangle(orgImg, cvPoint(robotFront.getX(), robotFront.getY()), cvPoint(robotFront.getX()+5, robotFront.getY()+5),
-					CvScalar.MAGENTA, 1, CV_AA, 0);
-			cvRectangle(orgImg, cvPoint(robotBack.getX(), robotBack.getY()), 
-					cvPoint(robotBack.getX()+5, robotBack.getY()+5), CvScalar.CYAN, 1, CV_AA, 0);
-			System.out.println("BLUE: " + robotFront.toString());
-			System.out.println("YELLOW: " + robotBack.toString());
-			
-			
-
-			System.out.println("Green blocks: " + greenBlocks.size());
-			System.out.println("Red blocks : " + redBlocks.size());
-			System.out.println("Ports: " + ports.size());
+			cvRectangle(orgImg, cvPoint(robotFront.getX()-5, robotFront.getY()-5), cvPoint(robotFront.getX()+5, robotFront.getY()+5),
+					CvScalar.CYAN, CV_FILLED, CV_AA, 0);
+			cvRectangle(orgImg, cvPoint(robotBack.getX()-5, robotBack.getY()-5), 
+					cvPoint(robotBack.getX()+5, robotBack.getY()+5), CvScalar.WHITE, CV_FILLED, CV_AA, 0);
 
 			for (int i = 0; i < ports.size(); i++) {
 				// Show green ports
-				cvRectangle(orgImg, cvPoint(ports.get(i).getGreen().getCenter().getX(), ports.get(i).getGreen().getCenter().getY()), 
-						cvPoint(ports.get(i).getGreen().getCenter().getX()+5, ports.get(i).getGreen().getCenter().getY()+5), 
-						CvScalar.BLACK, 1, CV_AA, 0);
+				cvRectangle(orgImg, cvPoint(ports.get(i).getGreen().getCenter().getX()-10, ports.get(i).getGreen().getCenter().getY()-10), 
+						cvPoint(ports.get(i).getGreen().getCenter().getX()+10, ports.get(i).getGreen().getCenter().getY()+10), 
+						CvScalar.GREEN, CV_FILLED, CV_AA, 0);
 				// Show red ports
-				cvRectangle(orgImg, cvPoint(ports.get(i).getRed().getCenter().getX(), ports.get(i).getRed().getCenter().getY()), 
-						cvPoint(ports.get(i).getRed().getCenter().getX()+5, ports.get(i).getRed().getCenter().getY()+5), 
-						CvScalar.BLACK, 1, CV_AA, 0);
-				System.out.println("Port: (r,g) " + ports.get(i).getRed().getCenter() + "  ;  " + 
-						ports.get(i).getGreen().getCenter() + " - in: " + ports.get(i).getIn() + " - out: " + ports.get(i).getOut());
+				cvRectangle(orgImg, cvPoint(ports.get(i).getRed().getCenter().getX()-10, ports.get(i).getRed().getCenter().getY()-10), 
+						cvPoint(ports.get(i).getRed().getCenter().getX()+10, ports.get(i).getRed().getCenter().getY()+10), 
+						CvScalar.RED, CV_FILLED, CV_AA, 0);
 			}
 
 
@@ -158,19 +183,15 @@ public class ImageScanner {
 			}
 
 			// DRAW LINE
-			
-			System.out.println(points.size());
 			for(int i = 0; i < points.size(); i++) {
 				if (i != points.size()-1) {
 					CvPoint p1 = new CvPoint(points.get(i).getX(),points.get(i).getY());
 					CvPoint p2 = new CvPoint(points.get(i+1).getX(),points.get(i+1).getY());
 					cvLine(orgImg, p1, p2, CV_RGB(255,0,210), 1, CV_AA, 0);
-					System.out.println(points.get(i) + " ; " + points.get(i+1));
 				} else {
 					CvPoint p1 = new CvPoint(points.get(i).getX(),points.get(i).getY());
 					CvPoint p2 = new CvPoint(points.get(1).getX(),points.get(1).getY());
 					cvLine(orgImg, p1, p2, CV_RGB(255,0,210), 1, CV_AA, 0);
-					System.out.println(points.get(i) + " ; " + points.get(0));
 				}
 			}
 
@@ -182,10 +203,7 @@ public class ImageScanner {
 				r2 = new CvPoint(robot.getMiddle().getX()+100, (int) (robot.getMiddle().getY()+(100*robot.getDirection())));
 			}
 				cvLine(orgImg, r1, r2, CV_RGB(255,0,0), 1, CV_AA, 0);
-			
-			
-			System.out.println("Robot direction: " + robot.getDirection());
-			System.out.println("Should be: " + robot.getMiddle().calculateSlope(points.get(1)));
+
 //			if(robot.getDirection() < robot.getMiddle().calculateSlope(points.get(1))) {
 //				System.out.println("TURN RIGHT");
 //			} 
@@ -195,18 +213,18 @@ public class ImageScanner {
 //			if(robot.getDirection() == robot.getMiddle().calculateSlope(points.get(1))) {
 //				System.out.println("STRAIGHT AHEAD");
 //			}
-			System.out.println(calculateRobotMovement(robot, points));
-
-			cvSaveImage("test2.jpg", orgImg);
 
 			// SHOW IMAGE
 			cnvs.setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
 			cnvs.showImage(orgImg);
+			cvSaveImage("drawImg.jpg", orgImg);
 	
 			long middle = System.currentTimeMillis();
 			long middleTime = middle - startTime;
 			System.out.println("TIME: " + middleTime);
+			//orgImg.release();
 		}
+
 	}
 
 	/*
@@ -257,6 +275,7 @@ public class ImageScanner {
 			}
 			cvSeq = cvSeq.h_next();
 		}
+
 		return blocks;
 	}
 
@@ -264,7 +283,7 @@ public class ImageScanner {
 	 * FIND PORTS - MAPS RED AND GREEN BLOCK TOGETHER TO PORTS
 	 */
 	public static ArrayList<Port> mapPorts(ArrayList<Block> redBlocks, ArrayList<Block> greenBlocks) {
-		ArrayList<Port> ports = new ArrayList<Port>();
+		ArrayList<Port> portsTemp = new ArrayList<Port>();
 		int index = 0; // the index of the closest green Block - from the red Block
 		int d0, d1; // variables to store distance measurements 
 
@@ -285,19 +304,20 @@ public class ImageScanner {
 					index = j;
 				}
 			}
-			ports.add(new Port(redBlocks.get(i),greenBlocks.get(index)));
+			portsTemp.add(new Port(redBlocks.get(i),greenBlocks.get(index)));
 		}
-		return ports;
+		return portsTemp;
 	}	
 
 	/*
 	 * CALCULATE ROUTE
 	 */
-	public static LinkedList<Position> mapRoute(ArrayList<Port> ports, Position start) {
-		LinkedList<Position> points = new LinkedList<Position>();
-
+	public static ArrayList<Position> mapRoute(ArrayList<Port> ports, Position start, Robot robot) {
+		ArrayList<Position> points = new ArrayList<Position>();
+		
 		// Create copy of port array
-		ArrayList<Port> portsTemp = ports;
+		ArrayList<Port> portsTemp = new ArrayList<Port>();
+		portsTemp.addAll(ports);
 
 		// Add start position to the "route list"
 		points.add(start);
@@ -309,14 +329,14 @@ public class ImageScanner {
 		for (int i = 0; i < size; i++) {
 
 			// distance between latest added position, and first in position in the portTemp array - base case
-			d0 = points.getLast().calculateDistance(portsTemp.get(0).getIn());
+			d0 = points.get(points.size()-1).calculateDistance(portsTemp.get(0).getIn());
 
 			// index of the first element
 			index = 0;
 
 			// find the index of the closest in position
 			for(int j = 1; j < portsTemp.size(); j++) {
-				d1 = points.getLast().calculateDistance(portsTemp.get(j).getIn());
+				d1 = points.get(points.size()-1).calculateDistance(portsTemp.get(j).getIn());
 				if (d1 < d0) {
 					d0 = d1;
 					index = j;
@@ -326,12 +346,15 @@ public class ImageScanner {
 			// add the in position and out position to the "route list"
 			points.add(portsTemp.get(index).getIn());
 			points.add(portsTemp.get(index).getOut());
-			//System.out.println("size: " + points.size());
 
 			// remove the port (in and out) from the list - it should only appear in the "route list" once
 			portsTemp.remove(index);
 		}
-		if (start.calculateDistance(points.get(1)) < 50) {
+		if (robot.getBack().calculateDistance(points.get(1)) < robot.getFront().calculateDistance(points.get(1))) {
+			points.remove(1);
+			points.remove(2);
+		}
+		if (start.calculateDistance(points.get(1)) < 0) {
 			points.remove(1);
 		}
 		return points;
@@ -369,7 +392,6 @@ public class ImageScanner {
 		cvFindContours(imgThreshold, memory, cvSeq, Loader.sizeof(CvContour.class), 
 				CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
 
-		// new arraylist to store "blocks" as Block objects
 		Position back = new Position();
 
 		CvRect rect = cvBoundingRect(cvSeq, 0);
@@ -378,19 +400,19 @@ public class ImageScanner {
 		int h = rect.height();
 		int w = rect.width();
 
-		// determine what size of elements you want as "blocks"
-		if (w < 1000 || h < 1000) {
+		// determine what size of elements you want 
+		if (w < 500 || h < 500) {
 			back.setX(x+(w/2));
 			back.setY(y+(h/2));
 		}
- 
+		
 		return back;
 	}
 	
 	/*
 	 * CALCULATE ROBOTS MOVEMENT FROM CURRENT POSITION AND DESIRED POSITION (PORT)
 	 */
-	public static String calculateRobotMovement(Robot robot, LinkedList<Position> points) {
+	public static String calculateRobotMovement(Robot robot, ArrayList<Position> points) {
 		
 		boolean frontRight = robot.getFront().getX() > robot.getBack().getX();
 		boolean dir = robot.getDirection() > robot.getMiddle().calculateSlope(points.get(1));
@@ -425,33 +447,31 @@ public class ImageScanner {
     /*
      * CALCULATE THE DIFFERENCE BETWEEN SPEED ON ROBOT WHEELS TO SIMULATE TURNS
      */
-    static int calculateRobotSpeed(Robot robot, LinkedList<Position> points) {
+    static int calculateRobotSpeed(Robot robot, ArrayList<Position> points) {
     	
-    	// slope (m1) for the line of the robot's direction
-    	double m1 = robot.getDirection();
+    	// center
+    	Position p0 = new Position();
     	
-    	// slope (m2) for the line of the desired direction
-    	double m2 = robot.getMiddle().calculateSlope(points.get(1));
+    	// current
+    	Position p1 = new Position();
+  
+    	p0.setX(robot.getMiddle().getX());
+    	p0.setY(robot.getMiddle().getY());
     	
-    	// calculate angle between the two lines
-    	double angle = Math.atan(Math.abs(m2-m1)/(1+m1*m2));
+    	p1.setX(points.get(1).getX());
+    	p1.setY(points.get(1).getY());
     	
-    	return (int) (angle * 2.5);
-//    	// set speed depending on the size of the angle
-//    	if (angle <= 10) {
-//    		speed = 25;
-//    	}
-//    	if (angle <= 20 && angle > 10) {
-//    		speed = 50;
-//    	}
-//    	if (angle <= 30 && angle > 20) {
-//    		speed = 75;
-//    	}
-//    	if (angle <= 40 && angle > 30) {
-//    		speed = 100;
-//    	}
-//    	if (angle > 50) {
-//    		speed = 125;
-//    	}
+    	double b = robot.getMiddle().getY()-(robot.getDirection()*robot.getMiddle().getX());
+    	
+    	// previous
+    	int y = (int) ((robot.getDirection()*(robot.getMiddle().getX()+30))+b);
+    	int x = robot.getMiddle().getX()+30;
+    	
+    	double angle = 180-Math.abs(Math.toDegrees(Math.atan2(p1.getX() - p0.getX(),p1.getY() - p0.getY())-
+                Math.atan2(x- p0.getX(),y- p0.getY())));
+
+    	System.out.println("ANGLE: " + Math.abs(angle/2));
+
+    	return (int) Math.abs(angle/2);
     }
 }

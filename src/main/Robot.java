@@ -7,12 +7,17 @@ public class Robot {
 	private Position middle = new Position();
 	private double direction;
 
-	public Robot(Position front, Position back) {
+	public Robot() {
+		
+	}
+	
+	public void robotInit(Position front, Position back) {
 		this.front = front;
 		this.back = back;
 		calculateMiddle();
 		calculateDirection();
 	}
+	
 
 	private void calculateDirection() {
 		double	dx = front.getX() - back.getX();
